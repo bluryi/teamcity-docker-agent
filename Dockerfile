@@ -1,6 +1,11 @@
-FROM teamcity-minimal-agent:latest
+# Copyright 2016 Fetch Robotics, Inc.
+# Author(s): Xu Han
 
-MAINTAINER Kateryna Shlyakhovetska <shkate@jetbrains.com>
+FROM teamcity-minimal-agent:latest
+# See teamcity docker agent instructions on Github:
+# https://github.com/JetBrains/teamcity-docker-agent
+
+MAINTAINER Xu Han <xhan@fetchrobotics.com>
 
 LABEL dockerImage.teamcity.version="latest" \
       dockerImage.teamcity.buildNumber="latest"
@@ -20,6 +25,31 @@ RUN apt-get update && \
     \
     usermod -aG docker buildagent
 
-COPY run-docker.sh /services/run-docker.sh
 
+# Install Node && test platform
+RUN \
+    curl -sL https://deb.nodesource.com/setup_4.x | bash - && \
+    apt-get install -y nodejs wget && \
+    npm install jasmine-reporters && \
+    npm install -g protractor && \
+    webdriver-manager update
+
+# Install Chrome.
+RUN \
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
+    apt-get update && \
+    apt-get install -y google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/* &&\
+    rm /etc/apt/sources.list.d/google.list
+
+# Install DB
+RUN \
+    apt-get update && apt-get install -y postgresql-9.4 postgresql-contrib-9.4 postgresql-server-dev-9.4
+
+# Other packages:
+RUN \
+    apt-get install -y xvfb sudo
+
+COPY xvfb /etc/init.d/
 
